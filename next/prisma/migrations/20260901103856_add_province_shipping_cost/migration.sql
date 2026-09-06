@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `provinces` ADD COLUMN `shipping_cost` BIGINT UNSIGNED NOT NULL DEFAULT 45000;

@@ -1,0 +1,282 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../styles/animations.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================= */
+/* Zivo Design Tokens (PRD §4, §59)                              */
+/* Brand palette: Ivory / Warm Cream / Champagne Gold / Deep Brown */
+/* Usage ratio: 60% Cream · 20% White Warm · 10% Brown ·          */
+/*              8% Gold · 2% Gold Dark                            */
+/* ============================================================= */
+
+:root {
+  /* Brand colors (PRD §4.1) */
+  --primary: #502909;
+  --primary-hover: #7e4f20;
+  --gold: #d7ac76;
+  --gold-light: #eecda1;
+  --gold-dark: #a06f39;
+  --background: #f7efe6;
+  --surface: #fefefd;
+  --surface-secondary: #eee4d8;
+  --border: #dfd1c1;
+  --text: #3f2a1c;
+  --text-secondary: #7a6654;
+  --text-muted: #a08d7a;
+
+  /* Semantic status colors (PRD §4.3) — kept separate from brand */
+  --success: #15803d;
+  --success-light: #dff3e6;
+  --warning: #b45309;
+  --warning-light: #fdefd9;
+  --info: #0369a1;
+  --info-light: #e1f1fb;
+  --destructive: #c0392b;
+  --destructive-light: #fbeae8;
+
+  /* Radius + shadow scale (PRD §6.1) */
+  --radius: 0.625rem;
+  --shadow-soft: 0 6px 24px -8px rgb(80 41 9 / 0.08);
+  --shadow-soft-lg: 0 16px 40px -16px rgb(80 41 9 / 0.18);
+  --shadow-gold: 0 8px 24px -10px rgb(160 111 57 / 0.35);
+
+  /* shadcn/ui semantic roles mapped to Zivo brand */
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #fdf8f2;
+  --secondary: var(--surface-secondary);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-secondary);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--gold-light);
+  --accent-foreground: var(--primary);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: var(--gold-dark);
+  --chart-1: var(--primary);
+  --chart-2: var(--gold);
+  --chart-3: var(--gold-dark);
+  --chart-4: var(--text-secondary);
+  --chart-5: var(--gold-light);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #fdf8f2;
+  --sidebar-accent: var(--gold-light);
+  --sidebar-accent-foreground: var(--primary);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--gold-dark);
+}
+
+.dark {
+  --primary: #e8c9a4;
+  --primary-hover: #f0d8b8;
+  --gold: #d7ac76;
+  --gold-light: #eecda1;
+  --gold-dark: #a06f39;
+  --background: #241a12;
+  --surface: #2e2318;
+  --surface-secondary: #3a2d20;
+  --border: #4a3a2a;
+  --text: #f4e8da;
+  --text-secondary: #cbb9a4;
+  --text-muted: #9a8872;
+
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #241a12;
+  --secondary: var(--surface-secondary);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-secondary);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-secondary);
+  --accent-foreground: var(--text);
+  --input: var(--border);
+  --ring: var(--gold);
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #241a12;
+  --sidebar-accent: var(--surface-secondary);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--gold);
+}
+
+@theme inline {
+  /* Typography */
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Shadows */
+  --shadow-soft: var(--shadow-soft);
+  --shadow-soft-lg: var(--shadow-soft-lg);
+  --shadow-gold: var(--shadow-gold);
+
+  /* Brand colors → Tailwind utilities */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dark: var(--gold-dark);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* Semantic status colors */
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-warning: var(--warning);
+  --color-warning-light: var(--warning-light);
+  --color-info: var(--info);
+  --color-info-light: var(--info-light);
+  --color-destructive-light: var(--destructive-light);
+
+  /* shadcn/ui semantic roles */
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-text font-sans antialiased;
+    line-height: 1.75;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display text-text;
+    text-wrap: balance;
+  }
+
+  p {
+    @apply text-text-secondary;
+  }
+
+  ::selection {
+    background: var(--gold-light);
+    color: var(--primary);
+  }
+
+  /* Visible, keyboard-friendly focus indicator */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
+/* Subtle brand scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dark);
+  border-radius: 9999px;
+  border: 3px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Respect reduced-motion preferences (PRD §6.2, §44) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

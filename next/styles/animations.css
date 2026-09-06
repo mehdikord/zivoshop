@@ -1,0 +1,141 @@
+/* ============================================================= */
+/* Zivo Motion Presets (PRD §6.2)                                */
+/* Short, natural, predictable animations. Every preset also     */
+/* respects prefers-reduced-motion (handled globally in          */
+/* globals.css).                                                 */
+/* ============================================================= */
+
+@keyframes zivo-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zivo-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zivo-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zivo-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zivo-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes zivo-slide-in-start {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes zivo-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Base animation utilities */
+.animate-zivo-fade-in {
+  animation: zivo-fade-in 0.4s var(--ease-smooth) both;
+}
+
+.animate-zivo-fade-up {
+  animation: zivo-fade-up 0.5s var(--ease-out-expo) both;
+}
+
+.animate-zivo-fade-down {
+  animation: zivo-fade-down 0.5s var(--ease-out-expo) both;
+}
+
+.animate-zivo-zoom-in {
+  animation: zivo-zoom-in 0.35s var(--ease-out-expo) both;
+}
+
+.animate-zivo-slide-in {
+  animation: zivo-slide-in 0.45s var(--ease-out-expo) both;
+}
+
+.animate-zivo-slide-in-start {
+  animation: zivo-slide-in-start 0.45s var(--ease-out-expo) both;
+}
+
+/* Entrance stagger delays */
+.animate-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animate-delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Soft hover elevation (PRD §6.1 — very soft shadow, no jump) */
+.elevation-hover {
+  transition:
+    transform 0.3s var(--ease-out-expo),
+    box-shadow 0.3s var(--ease-out-expo);
+}
+
+.elevation-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-soft-lg);
+}
+
+/* Skeleton shimmer used by product/order skeletons */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-secondary) 25%,
+    var(--gold-light) 50%,
+    var(--surface-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: zivo-shimmer 1.6s var(--ease-smooth) infinite;
+}

@@ -1,0 +1,658 @@
+-- ============================================================================
+-- ZivoShop Database Schema
+-- MySQL 8.0+
+-- Convention: Laravel-style (unsigned BIGINT IDs, timestamps on all tables)
+-- ============================================================================
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------------------------------------------------------
+-- 1. admins -- Modiran Sahet (Site Managers)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `admins` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `mobile` VARCHAR(20) NOT NULL,
+    `email` VARCHAR(255) DEFAULT NULL,
+    `password` VARCHAR(255) NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `admins_mobile_unique` (`mobile`),
+    UNIQUE KEY `admins_email_unique` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 2. users -- Karbarane Forushgah (Store Users)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `users` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `mobile` VARCHAR(20) NOT NULL,
+    `email` VARCHAR(255) DEFAULT NULL,
+    `password` VARCHAR(255) NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `last_login_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `users_mobile_unique` (`mobile`),
+    UNIQUE KEY `users_email_unique` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 3. password_reset_tokens -- Bazyaabi-ye Gozarchameh
+-- ----------------------------------------------------------------------------
+CREATE TABLE `password_reset_tokens` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `mobile` VARCHAR(20) NOT NULL,
+    `token` VARCHAR(255) NOT NULL,
+    `expires_at` TIMESTAMP NOT NULL,
+    `used_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `password_reset_tokens_mobile_index` (`mobile`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 4. personal_access_tokens -- Ehraz-e Hoyat (JWT / Sanctum-style)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `personal_access_tokens` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `tokenable_type` VARCHAR(255) NOT NULL,
+    `tokenable_id` BIGINT UNSIGNED NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `token` VARCHAR(64) NOT NULL,
+    `abilities` TEXT DEFAULT NULL,
+    `last_used_at` TIMESTAMP NULL DEFAULT NULL,
+    `expires_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
+    INDEX `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`, `tokenable_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 5. provinces -- Ostanha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `provinces` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(100) NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `provinces_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 6. cities -- Shahrha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `cities` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `province_id` BIGINT UNSIGNED NOT NULL,
+    `name` VARCHAR(100) NOT NULL,
+    `slug` VARCHAR(100) NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `cities_slug_unique` (`slug`),
+    INDEX `cities_province_id_index` (`province_id`),
+    CONSTRAINT `cities_province_id_foreign` FOREIGN KEY (`province_id`) REFERENCES `provinces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 7. addresses -- Neshehaye Karbaran
+-- ----------------------------------------------------------------------------
+CREATE TABLE `addresses` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `title` VARCHAR(100) NOT NULL,
+    `province_id` BIGINT UNSIGNED NOT NULL,
+    `city_id` BIGINT UNSIGNED NOT NULL,
+    `postal_code` VARCHAR(10) NOT NULL,
+    `full_address` TEXT NOT NULL,
+    `receiver_name` VARCHAR(255) DEFAULT NULL,
+    `receiver_phone` VARCHAR(20) DEFAULT NULL,
+    `is_default` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `addresses_user_id_index` (`user_id`),
+    INDEX `addresses_province_id_index` (`province_id`),
+    INDEX `addresses_city_id_index` (`city_id`),
+    CONSTRAINT `addresses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `addresses_province_id_foreign` FOREIGN KEY (`province_id`) REFERENCES `provinces` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `addresses_city_id_foreign` FOREIGN KEY (`city_id`) REFERENCES `cities` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 8. categories -- Dastebandi-ye Mahsoolat (Hierarchical)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `categories` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `parent_id` BIGINT UNSIGNED DEFAULT NULL,
+    `name` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `image` VARCHAR(500) DEFAULT NULL,
+    `description` TEXT DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `categories_slug_unique` (`slug`),
+    INDEX `categories_parent_id_index` (`parent_id`),
+    CONSTRAINT `categories_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 9. brands -- Brandha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `brands` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `logo` VARCHAR(500) DEFAULT NULL,
+    `description` TEXT DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `brands_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 10. colors -- Rangha (Reference)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `colors` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+    `hex` VARCHAR(7) NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `colors_name_unique` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 11. sizes -- Sayzha (Reference)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `sizes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `sizes_name_unique` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 12. products -- Mahsoolat
+-- ----------------------------------------------------------------------------
+CREATE TABLE `products` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `category_id` BIGINT UNSIGNED NOT NULL,
+    `brand_id` BIGINT UNSIGNED NOT NULL,
+    `name` VARCHAR(500) NOT NULL,
+    `slug` VARCHAR(500) NOT NULL,
+    `description` TEXT NOT NULL,
+    `price` BIGINT UNSIGNED NOT NULL COMMENT 'Gheymat Asli (Toman)',
+    `discount_price` BIGINT UNSIGNED DEFAULT NULL COMMENT 'Gheymat Takhfif (Toman)',
+    `discount_percent` TINYINT UNSIGNED DEFAULT NULL COMMENT 'Darsad Takhfif',
+    `stock` INT NOT NULL DEFAULT 0 COMMENT 'Mojoudi Anbar',
+    `rating` DECIMAL(3,2) NOT NULL DEFAULT 0.00 COMMENT 'Miangin Emtyaz',
+    `review_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `status` ENUM('active', 'draft', 'archived') NOT NULL DEFAULT 'active',
+    `is_new` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Mahsool Jadid',
+    `is_bestseller` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Porforush',
+    `seo_title` VARCHAR(255) DEFAULT NULL,
+    `seo_description` TEXT DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `products_slug_unique` (`slug`),
+    INDEX `products_category_id_index` (`category_id`),
+    INDEX `products_brand_id_index` (`brand_id`),
+    INDEX `products_status_index` (`status`),
+    INDEX `products_price_index` (`price`),
+    INDEX `products_rating_index` (`rating`),
+    INDEX `products_is_new_index` (`is_new`),
+    INDEX `products_is_bestseller_index` (`is_bestseller`),
+    INDEX `products_created_at_index` (`created_at`),
+    CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `products_brand_id_foreign` FOREIGN KEY (`brand_id`) REFERENCES `brands` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 13. product_images -- Tasavire Mahsoolat
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_images` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `path` VARCHAR(500) NOT NULL,
+    `alt` VARCHAR(255) DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `product_images_product_id_index` (`product_id`),
+    CONSTRAINT `product_images_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 14. product_videos -- Videoho-ye Mahsoolat
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_videos` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `url` VARCHAR(500) NOT NULL,
+    `poster` VARCHAR(500) DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `product_videos_product_id_index` (`product_id`),
+    CONSTRAINT `product_videos_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 15. product_details -- Blokhaye Majrou-ye Mahsool (Rich Content)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_details` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `type` ENUM('text', 'heading', 'list', 'image', 'table') NOT NULL,
+    `content` LONGTEXT DEFAULT NULL COMMENT 'Matni / JSON baraye list va jadval',
+    `src` VARCHAR(500) DEFAULT NULL COMMENT 'Addresse Tasvir dar noe image',
+    `alt` VARCHAR(255) DEFAULT NULL COMMENT 'Matne Jaygozin Tasvir',
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `product_details_product_id_index` (`product_id`),
+    CONSTRAINT `product_details_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 16. product_colors -- Ranghaye Har Mahsool (Pivot)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_colors` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `color_id` BIGINT UNSIGNED NOT NULL,
+    `image` VARCHAR(500) DEFAULT NULL COMMENT 'Tasvir-eEkhtesasi-ye In Rang',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `product_colors_product_color_unique` (`product_id`, `color_id`),
+    INDEX `product_colors_color_id_index` (`color_id`),
+    CONSTRAINT `product_colors_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `product_colors_color_id_foreign` FOREIGN KEY (`color_id`) REFERENCES `colors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 17. product_sizes -- Sayzhaye Har Mahsool (Pivot)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_sizes` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `size_id` BIGINT UNSIGNED NOT NULL,
+    `stock` INT NOT NULL DEFAULT 0 COMMENT 'Mojoudi In Sayz',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `product_sizes_product_size_unique` (`product_id`, `size_id`),
+    INDEX `product_sizes_size_id_index` (`size_id`),
+    CONSTRAINT `product_sizes_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `product_sizes_size_id_foreign` FOREIGN KEY (`size_id`) REFERENCES `sizes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 18. product_variants -- Varianthaye Mahsool (Tarkib-e Sayz+Rang + Mojoudi)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `product_variants` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `color_id` BIGINT UNSIGNED DEFAULT NULL,
+    `size_id` BIGINT UNSIGNED DEFAULT NULL,
+    `sku` VARCHAR(100) DEFAULT NULL,
+    `stock` INT NOT NULL DEFAULT 0,
+    `price_adjustment` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Taghir-e Gheymat nesbat be Paye (Toman)',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `product_variants_sku_unique` (`sku`),
+    INDEX `product_variants_product_id_index` (`product_id`),
+    INDEX `product_variants_color_id_index` (`color_id`),
+    INDEX `product_variants_size_id_index` (`size_id`),
+    CONSTRAINT `product_variants_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `product_variants_color_id_foreign` FOREIGN KEY (`color_id`) REFERENCES `colors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT `product_variants_size_id_foreign` FOREIGN KEY (`size_id`) REFERENCES `sizes` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 19. reviews -- Nazare Karbaran
+-- ----------------------------------------------------------------------------
+CREATE TABLE `reviews` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `rating` TINYINT UNSIGNED NOT NULL COMMENT 'Emtyaz 1 ta 5',
+    `title` VARCHAR(255) DEFAULT NULL,
+    `content` TEXT NOT NULL,
+    `verified_purchase` TINYINT(1) NOT NULL DEFAULT 0,
+    `is_approved` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `reviews_product_id_index` (`product_id`),
+    INDEX `reviews_user_id_index` (`user_id`),
+    INDEX `reviews_rating_index` (`rating`),
+    CONSTRAINT `reviews_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `reviews_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `reviews_rating_check` CHECK (`rating` BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 20. review_images -- Tasavire Nazarat
+-- ----------------------------------------------------------------------------
+CREATE TABLE `review_images` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `review_id` BIGINT UNSIGNED NOT NULL,
+    `path` VARCHAR(500) NOT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `review_images_review_id_index` (`review_id`),
+    CONSTRAINT `review_images_review_id_foreign` FOREIGN KEY (`review_id`) REFERENCES `reviews` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 21. wishlists --Liste Aaghazmondiha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `wishlists` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `wishlists_user_product_unique` (`user_id`, `product_id`),
+    INDEX `wishlists_product_id_index` (`product_id`),
+    CONSTRAINT `wishlists_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `wishlists_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 22. coupons -- Kodhaye Takhfif
+-- ----------------------------------------------------------------------------
+CREATE TABLE `coupons` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `code` VARCHAR(50) NOT NULL,
+    `type` ENUM('fixed', 'percent') NOT NULL DEFAULT 'fixed',
+    `value` BIGINT UNSIGNED NOT NULL COMMENT 'Meghdar-e Takhfif (Toman ya Darsad)',
+    `min_order_amount` BIGINT UNSIGNED DEFAULT NULL COMMENT 'Hadaghal-e Meghdar-e Sayyad',
+    `max_uses` INT UNSIGNED DEFAULT NULL COMMENT 'Hadaksar-e Tedad-e Estefade',
+    `used_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `starts_at` TIMESTAMP NULL DEFAULT NULL,
+    `expires_at` TIMESTAMP NULL DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `coupons_code_unique` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 23. orders -- Sayyadat
+-- ----------------------------------------------------------------------------
+CREATE TABLE `orders` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `order_number` VARCHAR(50) NOT NULL COMMENT 'Shomare-ye Sayyad (e.g. ZV-140401001)',
+    `coupon_id` BIGINT UNSIGNED DEFAULT NULL,
+    `status` ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned') NOT NULL DEFAULT 'pending',
+    `subtotal` BIGINT UNSIGNED NOT NULL COMMENT 'Jam-eجز (Toman)',
+    `discount_total` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Meghdar-e Kol-e Takhfif (Toman)',
+    `shipping_cost` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Hazine-ye Ersal (Toman)',
+    `coupon_discount` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Takhfif-e Kod-e Takhfif (Toman)',
+    `total` BIGINT UNSIGNED NOT NULL COMMENT 'Meghdar-e Nahaee (Toman)',
+    `receiver_name` VARCHAR(255) NOT NULL,
+    `receiver_phone` VARCHAR(20) NOT NULL,
+    `province` VARCHAR(100) NOT NULL COMMENT '_snapshot from Ostan',
+    `city` VARCHAR(100) NOT NULL COMMENT '_snapshot from Shahr',
+    `postal_code` VARCHAR(10) NOT NULL,
+    `full_address` TEXT NOT NULL,
+    `customer_note` TEXT DEFAULT NULL,
+    `admin_note` TEXT DEFAULT NULL,
+    `paid_at` TIMESTAMP NULL DEFAULT NULL,
+    `shipped_at` TIMESTAMP NULL DEFAULT NULL,
+    `delivered_at` TIMESTAMP NULL DEFAULT NULL,
+    `cancelled_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `orders_order_number_unique` (`order_number`),
+    INDEX `orders_user_id_index` (`user_id`),
+    INDEX `orders_coupon_id_index` (`coupon_id`),
+    INDEX `orders_status_index` (`status`),
+    INDEX `orders_created_at_index` (`created_at`),
+    CONSTRAINT `orders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT `orders_coupon_id_foreign` FOREIGN KEY (`coupon_id`) REFERENCES `coupons` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 24. order_items -- Aitemhaye Sayyad
+-- ----------------------------------------------------------------------------
+CREATE TABLE `order_items` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `order_id` BIGINT UNSIGNED NOT NULL,
+    `product_id` BIGINT UNSIGNED NOT NULL,
+    `product_name` VARCHAR(500) NOT NULL COMMENT 'Name-e Mahsool dar Zaman-e Sayyad',
+    `product_image` VARCHAR(500) DEFAULT NULL COMMENT 'Tasvir-e Mahsool dar Zaman-e Sayyad',
+    `size` VARCHAR(50) DEFAULT NULL,
+    `color` VARCHAR(100) DEFAULT NULL,
+    `quantity` INT UNSIGNED NOT NULL DEFAULT 1,
+    `unit_price` BIGINT UNSIGNED NOT NULL COMMENT 'Gheymat-e Vahed dar Zaman-e Sayyad (Toman)',
+    `unit_discount` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Takhfif-e Har Vahed (Toman)',
+    `total` BIGINT UNSIGNED NOT NULL COMMENT 'Gheymat-e Kol-e In Aitem (Toman)',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `order_items_order_id_index` (`order_id`),
+    INDEX `order_items_product_id_index` (`product_id`),
+    CONSTRAINT `order_items_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 25. order_status_history -- Tarikhche-ye Vaziyat-e Sayyad (Timeline)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `order_status_history` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `order_id` BIGINT UNSIGNED NOT NULL,
+    `status` ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned') NOT NULL,
+    `note` TEXT DEFAULT NULL,
+    `admin_id` BIGINT UNSIGNED DEFAULT NULL COMMENT 'Modiri ke Taghir-e Vaziyat ra Amal Karde',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `order_status_history_order_id_index` (`order_id`),
+    INDEX `order_status_history_admin_id_index` (`admin_id`),
+    CONSTRAINT `order_status_history_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `order_status_history_admin_id_foreign` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 26. payments -- Pardakht-ha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `payments` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `order_id` BIGINT UNSIGNED NOT NULL,
+    `gateway` VARCHAR(50) NOT NULL DEFAULT 'online' COMMENT 'Name-e Dar-gah-e Pardakht',
+    `transaction_id` VARCHAR(255) DEFAULT NULL COMMENT 'Shomare-ye Taraakonesh',
+    `reference_id` VARCHAR(255) DEFAULT NULL COMMENT 'Shomare-ye Marja-e Banki',
+    `amount` BIGINT UNSIGNED NOT NULL COMMENT 'Meghdar-e Pardakhti (Toman)',
+    `status` ENUM('pending', 'successful', 'failed', 'cancelled', 'refunded') NOT NULL DEFAULT 'pending',
+    `paid_at` TIMESTAMP NULL DEFAULT NULL,
+    `refunded_at` TIMESTAMP NULL DEFAULT NULL,
+    `raw_response` JSON DEFAULT NULL COMMENT 'Paskhokh-ye Khame-ye Dar-gah',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `payments_order_id_index` (`order_id`),
+    INDEX `payments_status_index` (`status`),
+    INDEX `payments_transaction_id_index` (`transaction_id`),
+    CONSTRAINT `payments_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 27. banners -- Banr-haye Tablyghati va Hero Slides
+-- ----------------------------------------------------------------------------
+CREATE TABLE `banners` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(255) NOT NULL,
+    `subtitle` VARCHAR(500) DEFAULT NULL,
+    `eyebrow` VARCHAR(255) DEFAULT NULL,
+    `cta_label` VARCHAR(100) DEFAULT NULL,
+    `href` VARCHAR(500) DEFAULT NULL,
+    `image` VARCHAR(500) NOT NULL,
+    `position` ENUM('hero', 'campaign', 'special_offer', 'footer', 'sidebar') NOT NULL DEFAULT 'hero',
+    `align` ENUM('start', 'center') NOT NULL DEFAULT 'center',
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `starts_at` TIMESTAMP NULL DEFAULT NULL,
+    `expires_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `banners_position_index` (`position`),
+    INDEX `banners_is_active_index` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 28. features -- Mozayye-Kharid
+-- ----------------------------------------------------------------------------
+CREATE TABLE `features` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(255) NOT NULL,
+    `description` TEXT NOT NULL,
+    `icon` VARCHAR(100) DEFAULT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 29. pages -- Safahat-e Sabet (Darbare Ma, Tamas Ba Ma, Ghavanin)
+-- ----------------------------------------------------------------------------
+CREATE TABLE `pages` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title` VARCHAR(255) NOT NULL,
+    `slug` VARCHAR(255) NOT NULL,
+    `content` LONGTEXT NOT NULL,
+    `seo_title` VARCHAR(255) DEFAULT NULL,
+    `seo_description` TEXT DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `pages_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 30. contact_messages -- Payamhaye Ferm-e Tamas
+-- ----------------------------------------------------------------------------
+CREATE TABLE `contact_messages` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `mobile` VARCHAR(20) NOT NULL,
+    `email` VARCHAR(255) DEFAULT NULL,
+    `subject` VARCHAR(255) DEFAULT NULL,
+    `message` TEXT NOT NULL,
+    `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+    `replied_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 31. newsletters -- Estefade-ye Khabarnameh
+-- ----------------------------------------------------------------------------
+CREATE TABLE `newsletters` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `email` VARCHAR(255) NOT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `newsletters_email_unique` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 32. site_settings -- Tanzimat-e Sahet
+-- ----------------------------------------------------------------------------
+CREATE TABLE `site_settings` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `key` VARCHAR(255) NOT NULL,
+    `value` LONGTEXT DEFAULT NULL,
+    `type` ENUM('text', 'json', 'boolean', 'integer') NOT NULL DEFAULT 'text',
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `site_settings_key_unique` (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 33. activity_logs -- Log-e Fa'aliyatha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `activity_logs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_type` ENUM('admin', 'user') NOT NULL,
+    `user_id` BIGINT UNSIGNED NOT NULL,
+    `action` VARCHAR(255) NOT NULL,
+    `subject_type` VARCHAR(255) DEFAULT NULL,
+    `subject_id` BIGINT UNSIGNED DEFAULT NULL,
+    `properties` JSON DEFAULT NULL,
+    `ip_address` VARCHAR(45) DEFAULT NULL,
+    `user_agent` VARCHAR(500) DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `activity_logs_user_type_user_id_index` (`user_type`, `user_id`),
+    INDEX `activity_logs_subject_type_subject_id_index` (`subject_type`, `subject_id`),
+    INDEX `activity_logs_created_at_index` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 34. search_logs -- Log-e Jostojoha
+-- ----------------------------------------------------------------------------
+CREATE TABLE `search_logs` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT UNSIGNED DEFAULT NULL,
+    `query` VARCHAR(500) NOT NULL,
+    `results_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `ip_address` VARCHAR(45) DEFAULT NULL,
+    `created_at` TIMESTAMP NULL DEFAULT NULL,
+    `updated_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `search_logs_user_id_index` (`user_id`),
+    INDEX `search_logs_query_index` (`query`(100)),
+    CONSTRAINT `search_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;

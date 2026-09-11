@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { SiteShell } from "@/components/layout/site-shell";
+import { AuthInitializer } from "@/components/auth/auth-initializer";
 
 export function RootShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,5 +11,9 @@ export function RootShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  return <SiteShell>{children}</SiteShell>;
+  return (
+    <AuthInitializer>
+      <SiteShell>{children}</SiteShell>
+    </AuthInitializer>
+  );
 }

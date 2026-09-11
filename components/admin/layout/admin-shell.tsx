@@ -4,6 +4,7 @@ import { SidebarProvider, useSidebar } from "@/components/admin/layout/admin-sid
 import { AdminSidebar } from "@/components/admin/layout/admin-sidebar";
 import { AdminHeader } from "@/components/admin/layout/admin-header";
 import { cn } from "@/lib/utils";
+import { AuthInitializer } from "@/components/auth/auth-initializer";
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
@@ -27,7 +28,9 @@ function ShellContent({ children }: { children: React.ReactNode }) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <ShellContent>{children}</ShellContent>
+      <AuthInitializer>
+        <ShellContent>{children}</ShellContent>
+      </AuthInitializer>
     </SidebarProvider>
   );
 }

@@ -9,6 +9,20 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat("fa-IR").format(value);
 }
 
+/** Format a large number compactly in Persian units, e.g. ۵۰۰ هزار / ۲ میلیون. */
+export function formatCompactNumber(value: number): string {
+  if (value >= 1_000_000_000) {
+    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(value / 1_000_000_000)} میلیارد`;
+  }
+  if (value >= 1_000_000) {
+    return `${new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(value / 1_000_000)} میلیون`;
+  }
+  if (value >= 1_000) {
+    return `${new Intl.NumberFormat("fa-IR").format(Math.round(value / 1_000))} هزار`;
+  }
+  return new Intl.NumberFormat("fa-IR").format(value);
+}
+
 /** Format a discount percent, e.g. ۲۵٪ */
 export function formatPercent(value: number): string {
   return `${new Intl.NumberFormat("fa-IR").format(Math.round(value))}٪`;

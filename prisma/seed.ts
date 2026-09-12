@@ -1,15 +1,9 @@
 import { PrismaClient } from "./generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
+import { getDbConfig } from "../lib/db-config";
 
-const adapter = new PrismaMariaDb({
-  host: "localhost",
-  port: 3306,
-  user: "root",
-  password: "Mehdi123",
-  database: "zivo_shop",
-  connectionLimit: 5,
-});
+const adapter = new PrismaMariaDb(getDbConfig());
 
 const prisma = new PrismaClient({ adapter });
 

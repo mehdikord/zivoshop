@@ -2,6 +2,7 @@ import { PrismaClient } from "./generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { readFileSync, existsSync } from "fs";
 import path from "path";
+import { getDbConfig } from "../lib/db-config";
 
 // ============================================================================
 // Dedicated Province & City seeder
@@ -18,14 +19,7 @@ import path from "path";
 //   pnpm run db:seed:locations
 // ============================================================================
 
-const adapter = new PrismaMariaDb({
-  host: "localhost",
-  port: 3306,
-  user: "root",
-  password: "Mehdi123",
-  database: "zivo_shop",
-  connectionLimit: 5,
-});
+const adapter = new PrismaMariaDb(getDbConfig());
 
 const prisma = new PrismaClient({ adapter });
 

@@ -1,19 +1,13 @@
 import { PrismaClient } from "../prisma/generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { getDbConfig } from "@/lib/db-config";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaMariaDb({
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: "Mehdi123",
-    database: "zivo_shop",
-    connectionLimit: 5,
-  });
+  const adapter = new PrismaMariaDb(getDbConfig());
 
   return new PrismaClient({
     adapter,

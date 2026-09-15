@@ -103,10 +103,9 @@ export async function POST(request: NextRequest) {
       folderId = folder.id;
     }
 
-    const { writeFile, mkdir } = await import("fs/promises");
-    const path = await import("path");
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "media");
-    await mkdir(uploadDir, { recursive: true });
+    const { writeFile } = await import("fs/promises");
+    const { ensureStorageDir, storageFilePath, storagePublicUrl } = await import("@/lib/storage");
+    await ensureStorageDir("media");
 
     const uploaded: {
       id: string;
@@ -136,7 +135,7 @@ export async function POST(request: NextRequest) {
 
       const ext = (file.name.split(".").pop() ?? "").toLowerCase() || (type === "image" ? "jpg" : "mp4");
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = path.join(uploadDir, filename);
+      const filePath = storageFilePath("media", filename);
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
 
@@ -157,7 +156,7 @@ export async function POST(request: NextRequest) {
           folderId,
           filename,
           originalName: file.name.replace(/\.[^.]+$/, ""),
-          url: `/uploads/media/${filename}`,
+          url: storagePublicUrl("media", filename),
           type,
           mimeType: mime || null,
           size: file.size,

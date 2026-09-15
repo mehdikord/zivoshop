@@ -28,6 +28,8 @@ import {
   formatBytes,
   isAllowedType,
 } from "./media-helpers";
+import { uploadMediaFile } from "./upload-media-file";
+import { UploadProgressList, type UploadJob } from "./upload-progress-list";
 
 interface MediaPickerDialogProps {
   open: boolean;
@@ -78,7 +80,7 @@ export function MediaPickerDialog({
   const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string>("");
@@ -154,29 +156,72 @@ export function MediaPickerDialog({
   };
 
   const handlePickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      Array.from(files).forEach((f) => fd.append("files", f));
-      if (selectedFolderId && selectedFolderId !== "none") {
-        fd.append("folderId", selectedFolderId);
-      }
-      const res = await fetch("/api/admin/media", { method: "POST", body: fd });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(`${json.count} فایل آپلود شد`);
-        loadFolders();
-        loadMedia();
-      } else {
-        toast.error(json.message || "خطا در آپلود");
-      }
-    } catch {
-      toast.error("خطا در آپلود");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    e.target.value = "";
+
+    const folderId =
+      selectedFolderId && selectedFolderId !== "none" ? selectedFolderId : undefined;
+
+    const jobs: UploadJob[] = files.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${file.name}`,
+      name: file.name,
+      progress: 0,
+      status: "uploading" as const,
+    }));
+
+    setUploadJobs((prev) => [...prev, ...jobs]);
+
+    const results = await Promise.allSettled(
+      files.map((file, index) => {
+        const jobId = jobs[index]!.id;
+        return uploadMediaFile(file, {
+          folderId,
+          onProgress: (percent) => {
+            setUploadJobs((prev) =>
+              prev.map((job) =>
+                job.id === jobId && job.status === "uploading"
+                  ? { ...job, progress: percent }
+                  : job
+              )
+            );
+          },
+        })
+          .then((result) => {
+            setUploadJobs((prev) => prev.filter((job) => job.id !== jobId));
+            return result;
+          })
+          .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : "خطا در آپلود";
+            setUploadJobs((prev) =>
+              prev.map((job) =>
+                job.id === jobId
+                  ? { ...job, status: "error", error: message, progress: 100 }
+                  : job
+              )
+            );
+            window.setTimeout(() => {
+              setUploadJobs((prev) => prev.filter((job) => job.id !== jobId));
+            }, 3500);
+            throw err;
+          });
+      })
+    );
+
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const failCount = results.length - successCount;
+
+    if (successCount > 0) {
+      toast.success(`${successCount.toLocaleString("fa-IR")} فایل آپلود شد`);
+      loadFolders();
+      loadMedia();
+    }
+    if (failCount > 0 && successCount === 0) {
+      toast.error("آپلود فایل‌ها ناموفق بود");
+    } else if (failCount > 0) {
+      toast.error(`${failCount.toLocaleString("fa-IR")} فایل آپلود نشد`);
     }
   };
 
@@ -330,21 +375,21 @@ export function MediaPickerDialog({
                 accept={FILE_ACCEPT[accept]}
                 onChange={handlePickFile}
                 className="hidden"
-                disabled={uploading}
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
                 size="sm"
               >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
+                <Upload className="h-4 w-4" />
                 بارگذاری
               </Button>
             </div>
+
+            {uploadJobs.length > 0 && (
+              <div className="border-b border-border px-3 py-3">
+                <UploadProgressList jobs={uploadJobs} />
+              </div>
+            )}
 
             {/* Grid */}
             <div className="scrollbar-hide flex-1 overflow-y-auto p-4">

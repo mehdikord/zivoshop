@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { writeFile } from "fs/promises";
+import { ensureStorageDir, storageFilePath, storagePublicUrl } from "@/lib/storage";
 import { logActivity, extractIp, extractUserAgent, ActivityActions } from "@/lib/activity-logger";
 
 export async function POST(request: NextRequest) {
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-    await mkdir(uploadDir, { recursive: true });
+    await ensureStorageDir("products");
 
     const uploaded: { path: string; alt: string }[] = [];
 
@@ -37,12 +36,12 @@ export async function POST(request: NextRequest) {
 
       const ext = file.name.split(".").pop() ?? "jpg";
       const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = path.join(uploadDir, filename);
+      const filePath = storageFilePath("products", filename);
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
 
       uploaded.push({
-        path: `/uploads/products/${filename}`,
+        path: storagePublicUrl("products", filename),
         alt: file.name.replace(/\.[^.]+$/, ""),
       });
     }

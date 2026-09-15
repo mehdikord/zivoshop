@@ -79,9 +79,8 @@ export async function DELETE(
   // Remove the physical file (best-effort)
   try {
     const { unlink } = await import("fs/promises");
-    const path = await import("path");
-    const safeName = path.basename(media.filename);
-    const filePath = path.join(process.cwd(), "public", "uploads", "media", safeName);
+    const { storageFilePath } = await import("@/lib/storage");
+    const filePath = storageFilePath("media", media.filename);
     await unlink(filePath);
   } catch {
     // file may already be missing; ignore

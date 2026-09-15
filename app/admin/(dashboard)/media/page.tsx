@@ -28,6 +28,11 @@ import {
   formatBytes,
   formatMediaDate,
 } from "@/components/admin/media/media-helpers";
+import { uploadMediaFile } from "@/components/admin/media/upload-media-file";
+import {
+  UploadProgressList,
+  type UploadJob,
+} from "@/components/admin/media/upload-progress-list";
 
 const FILE_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/svg+xml,image/avif,video/mp4,video/webm,video/ogg,video/quicktime";
 
@@ -54,7 +59,7 @@ export default function MediaPage() {
   const [typeFilter, setTypeFilter] = useState<MediaAcceptType>("all");
   const [activeFolderId, setActiveFolderId] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
 
   // Dialogs
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -125,29 +130,70 @@ export default function MediaPage() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      Array.from(files).forEach((f) => fd.append("files", f));
-      if (activeFolderId && activeFolderId !== "none") {
-        fd.append("folderId", activeFolderId);
-      }
-      const res = await fetch("/api/admin/media", { method: "POST", body: fd });
-      const json = await res.json();
-      if (json.success) {
-        toast.success(`${json.count} فایل آپلود شد`);
-        loadFolders();
-        loadMedia();
-      } else {
-        toast.error(json.message || "خطا در آپلود");
-      }
-    } catch {
-      toast.error("خطا در آپلود");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    e.target.value = "";
+
+    const folderId =
+      activeFolderId && activeFolderId !== "none" ? activeFolderId : undefined;
+
+    const jobs: UploadJob[] = files.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}-${file.name}`,
+      name: file.name,
+      progress: 0,
+      status: "uploading" as const,
+    }));
+
+    setUploadJobs((prev) => [...prev, ...jobs]);
+
+    const results = await Promise.allSettled(
+      files.map((file, index) => {
+        const jobId = jobs[index]!.id;
+        return uploadMediaFile(file, {
+          folderId,
+          onProgress: (percent) => {
+            setUploadJobs((prev) =>
+              prev.map((job) =>
+                job.id === jobId && job.status === "uploading"
+                  ? { ...job, progress: percent }
+                  : job
+              )
+            );
+          },
+        }).then((result) => {
+          setUploadJobs((prev) => prev.filter((job) => job.id !== jobId));
+          return result;
+        }).catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : "خطا در آپلود";
+          setUploadJobs((prev) =>
+            prev.map((job) =>
+              job.id === jobId
+                ? { ...job, status: "error", error: message, progress: 100 }
+                : job
+            )
+          );
+          window.setTimeout(() => {
+            setUploadJobs((prev) => prev.filter((job) => job.id !== jobId));
+          }, 3500);
+          throw err;
+        });
+      })
+    );
+
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const failCount = results.length - successCount;
+
+    if (successCount > 0) {
+      toast.success(`${successCount.toLocaleString("fa-IR")} فایل آپلود شد`);
+      loadFolders();
+      loadMedia();
+    }
+    if (failCount > 0 && successCount === 0) {
+      toast.error("آپلود فایل‌ها ناموفق بود");
+    } else if (failCount > 0) {
+      toast.error(`${failCount.toLocaleString("fa-IR")} فایل آپلود نشد`);
     }
   };
 
@@ -338,10 +384,9 @@ export default function MediaPage() {
           accept={FILE_ACCEPT}
           onChange={handleFileUpload}
           className="hidden"
-          disabled={uploading}
         />
-        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        <Button onClick={() => fileInputRef.current?.click()}>
+          <Upload className="h-4 w-4" />
           بارگذاری فایل
         </Button>
       </div>
@@ -469,6 +514,12 @@ export default function MediaPage() {
               <option value="video">ویدئوها</option>
             </select>
           </div>
+
+          {uploadJobs.length > 0 && (
+            <div className="mb-3">
+              <UploadProgressList jobs={uploadJobs} />
+            </div>
+          )}
 
           {selected.length > 0 && (
             <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-gold-dark/40 bg-gold-light/20 p-2.5">

@@ -36,6 +36,12 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# local file storage (uploads live outside public/)
+/storage/media/**
+!/storage/media/.gitkeep
+/storage/products/**
+!/storage/products/.gitkeep
+
 # vercel
 .vercel
 

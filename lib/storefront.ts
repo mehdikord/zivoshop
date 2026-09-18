@@ -222,7 +222,7 @@ export async function getAllCategories(): Promise<Category[]> {
     id: c.id.toString(),
     name: c.name,
     slug: c.slug,
-    image: c.image ?? "/images/placeholder.svg",
+    image: c.image ?? "/images/placeholder.jpg",
     description: c.description ?? undefined,
     parentId: c.parentId?.toString() ?? null,
   }));

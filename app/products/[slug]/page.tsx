@@ -5,6 +5,9 @@ import { ProductDetailPage } from "@/components/product/product-detail-page";
 
 type Params = Promise<{ slug: string }>;
 
+/** Keep PDP fresh after admin image/content updates (ISR). */
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   const slugs = await getProductSlugs();
   return slugs.map((slug) => ({ slug }));

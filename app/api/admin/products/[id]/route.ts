@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAdminToken } from "@/lib/auth";
 import { toEnglishDigits } from "@/lib/utils";
 import { logActivity, extractIp, extractUserAgent, ActivityActions } from "@/lib/activity-logger";
+import { revalidateProductStorefront } from "@/lib/revalidate-storefront";
 
 export async function GET(
   _request: NextRequest,
@@ -188,6 +189,8 @@ export async function PATCH(
     }
   }
 
+  revalidateProductStorefront(updated.slug, product.slug);
+
   return NextResponse.json({
     success: true,
     data: { id: updated.id.toString(), name: updated.name, slug: updated.slug },
@@ -223,5 +226,6 @@ export async function DELETE(
   logActivity({ userType: "admin", userId: admin.id, action: ActivityActions.PRODUCT_DELETED, subjectType: "Product", subjectId: product.id, properties: { name: product.name }, ipAddress: extractIp(_request.headers), userAgent: extractUserAgent(_request.headers) });
 
   await prisma.product.delete({ where: { id: BigInt(id) } });
+  revalidateProductStorefront(product.slug);
   return NextResponse.json({ success: true, data: null });
 }

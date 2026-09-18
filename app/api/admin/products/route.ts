@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAdminToken } from "@/lib/auth";
 import { toEnglishDigits } from "@/lib/utils";
 import { logActivity, extractIp, extractUserAgent, ActivityActions } from "@/lib/activity-logger";
+import { revalidateProductStorefront } from "@/lib/revalidate-storefront";
 
 export async function GET(request: NextRequest) {
   const admin = await verifyAdminToken();
@@ -166,6 +167,8 @@ export async function POST(request: NextRequest) {
       })),
     });
   }
+
+  revalidateProductStorefront(product.slug);
 
   return NextResponse.json({
     success: true,

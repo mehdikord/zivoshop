@@ -1,5 +1,4 @@
 import { Sparkles, Award, Gem, Truck } from "lucide-react";
-import { Section } from "@/components/sections/section";
 import type { LucideIcon } from "lucide-react";
 
 type Feature = {
@@ -16,7 +15,7 @@ const features: Feature[] = [
   },
   {
     title: "کیفیت بالا",
-    description: "ضمین کیفیت و اصالت تمام کالا‌ها",
+    description: "تضمین کیفیت و اصالت تمام کالا‌ها",
     icon: Award,
   },
   {
@@ -31,25 +30,38 @@ const features: Feature[] = [
   },
 ];
 
-/** Minimal feature strip with elegant icons */
+/**
+ * Compact trust strip under the hero — light footprint on mobile,
+ * refined inline row on desktop (PRD §12).
+ */
 export function Features() {
   return (
-    <Section className="py-8 lg:py-10">
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-4" role="list" aria-label="ویژگی‌های فروشگاه">
-        {features.map((feature, index) => (
-          <li key={index} className="group flex flex-col items-center text-center p-5 sm:p-6 rounded-2xl bg-surface border border-border/50 hover:border-gold-light/50 hover:bg-gold-light/5 transition-all duration-300">
-            <div className="mb-4 flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gold-light/10 text-gold-dark group-hover:bg-gold-light/20 group-hover:scale-105 transition-all duration-300">
-              <feature.icon className="size-7" aria-hidden="true" />
-            </div>
-            <p className="text-base font-semibold text-text group-hover:text-primary transition-colors">
-              {feature.title}
-            </p>
-            <p className="mt-1.5 text-sm leading-5 text-text-secondary">
-              {feature.description}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </Section>
+    <section
+      className="border-y border-border/40 bg-surface/70"
+      aria-label="ویژگی‌های فروشگاه"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <ul className="grid grid-cols-4" role="list">
+          {features.map((feature) => (
+            <li
+              key={feature.title}
+              className="flex flex-col items-center justify-center gap-1.5 border-border/45 px-1.5 py-3.5 text-center not-last:border-e sm:gap-2 sm:px-3 sm:py-4 md:flex-row md:gap-3 md:py-3.5 md:text-start"
+            >
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gold-light/15 text-gold-dark sm:size-9">
+                <feature.icon className="size-3.5 sm:size-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold leading-tight text-text sm:text-sm">
+                  {feature.title}
+                </p>
+                <p className="mt-0.5 hidden text-xs leading-5 text-text-secondary lg:block">
+                  {feature.description}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }

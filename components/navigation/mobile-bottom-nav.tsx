@@ -103,7 +103,7 @@ export function MobileBottomNav({
               </span>
               <span
                 className={cn(
-                  "text-[10px] font-medium transition-colors",
+                  "text-[10px] font-medium leading-none transition-colors",
                   item.active ? "text-primary" : "text-text-secondary",
                 )}
               >
@@ -112,7 +112,7 @@ export function MobileBottomNav({
               <span
                 aria-hidden
                 className={cn(
-                  "absolute inset-x-3 top-0 h-0.5 rounded-full bg-gold-dark transition-opacity",
+                  "absolute inset-x-3 top-1.5 h-0.5 rounded-full bg-gold-dark transition-opacity",
                   item.active ? "opacity-100" : "opacity-0",
                 )}
               />
@@ -120,12 +120,12 @@ export function MobileBottomNav({
           );
 
           const className = cn(
-            "relative flex flex-col items-center justify-center gap-0.5 pt-0.5 transition-colors active:scale-95",
+            "relative flex h-full w-full flex-col items-center justify-center gap-1 py-2 transition-colors active:scale-95",
             item.active ? "text-primary" : "text-text-secondary",
           );
 
           return (
-            <li key={item.label} className="relative">
+            <li key={item.label} className="relative h-full">
               {item.href ? (
                 <Link href={item.href} className={className}>
                   {Inner}
@@ -135,7 +135,7 @@ export function MobileBottomNav({
                   type="button"
                   onClick={item.onClick}
                   aria-label={item.label}
-                  className={cn(className, "w-full cursor-pointer")}
+                  className={cn(className, "cursor-pointer")}
                 >
                   {Inner}
                 </button>

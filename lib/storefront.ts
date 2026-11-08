@@ -38,6 +38,34 @@ function mapReview(r: { id: bigint; rating: number; title: string | null; conten
   };
 }
 
+/**
+ * Table detail blocks store `{ headers: string[], rows: string[][] }` as JSON
+ * (or a bare `rows` array). Anything malformed yields an empty table, which
+ * the UI skips.
+ */
+function parseTableBlock(content: string | null): Extract<RichBlock, { type: "table" }> {
+  const empty = { type: "table" as const, headers: [] as string[], rows: [] as string[][] };
+  if (!content) return empty;
+  try {
+    const parsed: unknown = JSON.parse(content);
+    const toRow = (r: unknown) => (Array.isArray(r) ? r.map((c) => String(c ?? "")) : []);
+    if (Array.isArray(parsed)) {
+      return { ...empty, rows: parsed.map(toRow).filter((r) => r.length > 0) };
+    }
+    if (parsed && typeof parsed === "object") {
+      const obj = parsed as { headers?: unknown; rows?: unknown };
+      return {
+        type: "table",
+        headers: Array.isArray(obj.headers) ? obj.headers.map((h) => String(h ?? "")) : [],
+        rows: Array.isArray(obj.rows) ? obj.rows.map(toRow).filter((r) => r.length > 0) : [],
+      };
+    }
+  } catch {
+    // fall through
+  }
+  return empty;
+}
+
 export async function mapProduct(p: {
   id: bigint; name: string; slug: string; description: string; price: bigint;
   discountPrice: bigint | null; discountPercent: number | null; stock: number;
@@ -96,7 +124,7 @@ export async function mapProduct(p: {
           case "image":
             return { type: "image" as const, src: d.src ?? "", alt: d.alt ?? "" };
           case "table":
-            return { type: "table" as const, headers: [], rows: [] };
+            return parseTableBlock(d.content);
           default:
             return { type: "text" as const, text: d.content ?? "" };
         }
@@ -109,6 +137,10 @@ export async function mapProduct(p: {
     slug: p.slug,
     category: p.categoryId.toString(),
     brand: p.brandId.toString(),
+    categoryName: p.category.name,
+    categorySlug: p.category.slug,
+    brandName: p.brand.name,
+    brandSlug: p.brand.slug,
     description: p.description,
     details: details && details.length > 0 ? details : undefined,
     images: images.length > 0 ? images : ["/images/placeholder.jpg"],

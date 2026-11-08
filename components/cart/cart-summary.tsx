@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCartStore } from "@/stores/cart-store";
 import type { Route } from "next";
 import { Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,10 @@ export function CartSummary({
         disabled={itemCount === 0}
         asChild
       >
-        <Link href={"/checkout" as Route}>
+        <Link
+          href={"/checkout" as Route}
+          onClick={() => useCartStore.getState().setDrawerOpen(false)}
+        >
           ادامه به تسویه حساب
         </Link>
       </Button>

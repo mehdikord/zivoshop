@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Star, Loader2, LogIn } from "lucide-react";
+import { Star, Loader2, LogIn, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +21,16 @@ import { cn } from "@/lib/utils";
  * Guests see a message prompting login instead of the form.
  * Submitted reviews are stored as pending and appear only after admin approval.
  */
-export function WriteReviewDialog({ productId }: { productId: string }) {
+export function WriteReviewDialog({
+  productId,
+  compact = false,
+  className,
+}: {
+  productId: string;
+  /** Compact: a single full-width button for guests and members alike. */
+  compact?: boolean;
+  className?: string;
+}) {
   const { isAuthenticated } = useAuth();
   const pathname = usePathname();
 
@@ -60,6 +69,16 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
 
   if (!isAuthenticated) {
     const redirect = pathname || "/";
+    if (compact) {
+      return (
+        <Button asChild variant="gold" className={cn("w-full", className)}>
+          <Link href={`/login?redirect=${encodeURIComponent(redirect)}`}>
+            <LogIn className="size-4" aria-hidden />
+            ورود و ثبت دیدگاه
+          </Link>
+        </Button>
+      );
+    }
     return (
       <div className="flex w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface-secondary/40 px-6 py-10 text-center">
         <LogIn className="mb-3 size-8 text-gold-dark" aria-hidden />
@@ -78,9 +97,16 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline-gold" size="sm">
-          ثبت دیدگاه
-        </Button>
+        {compact ? (
+          <Button variant="gold" className={cn("w-full", className)}>
+            <PenLine className="size-4" aria-hidden />
+            ثبت دیدگاه
+          </Button>
+        ) : (
+          <Button variant="outline-gold" size="sm" className={className}>
+            ثبت دیدگاه
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

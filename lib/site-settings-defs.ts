@@ -7,6 +7,10 @@
 export interface SiteSettings {
   siteName: string;
   siteDescription: string;
+  /** Logo shown on light surfaces (header, menus). Empty = typographic wordmark. */
+  siteLogo: string;
+  /** Optional logo for dark surfaces (footer). Falls back to `siteLogo`. */
+  siteLogoDark: string;
   contactPhone: string;
   contactEmail: string;
   contactAddress: string;
@@ -26,6 +30,8 @@ export interface SiteSettingsResult extends SiteSettings {
 export const SITE_SETTING_KEYS = [
   "site_name",
   "site_description",
+  "site_logo",
+  "site_logo_dark",
   "contact_phone",
   "contact_email",
   "contact_address",
@@ -42,6 +48,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   siteName: "زیوو",
   siteDescription:
     "زیوو فروشگاهی آنلاین و تخصصی در حوزه پوشاک بانوان است؛ از سوتین و شورت گرفته تا لباس خواب و لباس شب.",
+  siteLogo: "",
+  siteLogoDark: "",
   contactPhone: "021-26290000",
   contactEmail: "info@zivo.shop",
   contactAddress: "تهران، خیابان ولیعصر، بالاتر از پارک ساعی، شماره ۱۲۰",
@@ -52,4 +60,17 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   mapLocation: "تهران، خیابان ولیعصر، بالاتر از پارک ساعی، شماره ۱۲۰",
   mapLatitude: "35.7752",
   mapLongitude: "51.42",
+};
+
+/** Public branding subset passed from the root layout to client components. */
+export interface SiteBranding {
+  siteName: string;
+  logo: string;
+  logoDark: string;
+}
+
+export const DEFAULT_SITE_BRANDING: SiteBranding = {
+  siteName: DEFAULT_SITE_SETTINGS.siteName,
+  logo: "",
+  logoDark: "",
 };

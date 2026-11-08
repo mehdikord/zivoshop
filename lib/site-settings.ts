@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import {
   SITE_SETTING_KEYS,
   DEFAULT_SITE_SETTINGS,
+  DEFAULT_SITE_BRANDING,
+  type SiteBranding,
   type SiteSettings,
   type SiteSettingsResult,
 } from "@/lib/site-settings-defs";
@@ -22,6 +24,8 @@ type SettingRow = {
 const FIELD_BY_KEY: Record<(typeof SITE_SETTING_KEYS)[number], keyof SiteSettings> = {
   site_name: "siteName",
   site_description: "siteDescription",
+  site_logo: "siteLogo",
+  site_logo_dark: "siteLogoDark",
   contact_phone: "contactPhone",
   contact_email: "contactEmail",
   contact_address: "contactAddress",
@@ -68,4 +72,22 @@ export async function getSiteSettings(): Promise<SiteSettingsResult> {
   });
 
   return buildSiteSettings(rows);
+}
+
+/**
+ * Branding for the storefront chrome (logo + name). Never throws: if the
+ * database is unreachable the typographic wordmark is used instead.
+ */
+export async function getSiteBranding(): Promise<SiteBranding> {
+  try {
+    const settings = await getSiteSettings();
+    return {
+      siteName: settings.siteName,
+      logo: settings.siteLogo,
+      logoDark: settings.siteLogoDark,
+    };
+  } catch (error) {
+    console.error("getSiteBranding error:", error);
+    return DEFAULT_SITE_BRANDING;
+  }
 }

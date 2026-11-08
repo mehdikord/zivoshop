@@ -4,6 +4,24 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/admin/layout/admin-sidebar";
 import { PanelLeft, LogOut, Bell, ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
+import { adminNavGroups } from "@/components/admin/admin-nav-items";
+
+const SEGMENT_LABELS: Record<string, string> = {
+  ...Object.fromEntries(
+    adminNavGroups
+      .flatMap((g) => g.items)
+      .filter((item) => item.href !== "/admin")
+      .map((item) => [item.href.replace(/^\/admin\//, ""), item.label]),
+  ),
+  new: "افزودن",
+  edit: "ویرایش",
+};
+
+function segmentLabel(segment: string): string {
+  if (SEGMENT_LABELS[segment]) return SEGMENT_LABELS[segment];
+  if (/^\d+$/.test(segment)) return `#${Number(segment).toLocaleString("fa-IR", { useGrouping: false })}`;
+  return decodeURIComponent(segment);
+}
 
 interface AdminInfo {
   id: string;
@@ -68,7 +86,7 @@ export function AdminHeader() {
                         : ""
                     }
                   >
-                    {segment}
+                    {segmentLabel(segment)}
                   </span>
                 </span>
               ))}

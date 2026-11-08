@@ -71,8 +71,15 @@ export type Product = {
   id: string;
   name: string;
   slug: string;
+  /** Category id. */
   category: string;
+  /** Brand id. */
   brand: string;
+  /** Display names/slugs for the category and brand (storefront only). */
+  categoryName?: string;
+  categorySlug?: string;
+  brandName?: string;
+  brandSlug?: string;
   description: string;
   /** Structured rich description blocks (PRD §20). */
   details?: RichBlock[];

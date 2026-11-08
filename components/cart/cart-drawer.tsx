@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 
 import {
@@ -19,7 +20,7 @@ import { ConfirmationDialog } from "@/components/feedback/confirmation-dialog";
 import { formatNumber } from "@/lib/format";
 import { requiresConfirmation } from "@/lib/cart";
 import { useCartStore } from "@/stores/cart-store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Cart drawer opened from the header (PRD §54, §22).
@@ -31,6 +32,13 @@ export function CartDrawer() {
   const setDrawerOpen = useCartStore((s) => s.setDrawerOpen);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+
+  // Close the drawer whenever the route changes (checkout, product links…)
+  // so the user clearly sees the new page.
+  const pathname = usePathname();
+  useEffect(() => {
+    useCartStore.getState().setDrawerOpen(false);
+  }, [pathname]);
 
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
   const subtotal = items.reduce(

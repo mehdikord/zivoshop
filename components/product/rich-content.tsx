@@ -9,7 +9,7 @@ import type { RichBlock } from "@/types";
  */
 export function RichContent({ blocks }: { blocks: RichBlock[] }) {
   return (
-    <div className="prose-zivo space-y-5 text-sm leading-7 text-text-secondary">
+    <div className="prose-zivo space-y-5 text-sm leading-8 text-text-secondary">
       {blocks.map((block, i) => {
         switch (block.type) {
           case "text":
@@ -22,20 +22,21 @@ export function RichContent({ blocks }: { blocks: RichBlock[] }) {
             return (
               <h3
                 key={i}
-                className="text-base font-bold text-text"
+                className="flex items-center gap-2 pt-2 text-base font-extrabold text-text first:pt-0 before:h-4 before:w-1 before:rounded-full before:bg-gold-dark"
               >
                 {block.text}
               </h3>
             );
           case "list":
             return (
-              <ul key={i} className="list-disc space-y-1 pe-5">
+              <ul key={i} className="list-disc space-y-1.5 ps-5 marker:text-gold-dark">
                 {block.items.map((item, j) => (
                   <li key={j}>{item}</li>
                 ))}
               </ul>
             );
           case "table":
+            if (block.rows.length === 0 && block.headers.length === 0) return null;
             return (
               <div key={i} className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-sm">

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollToTop } from "@/components/navigation/scroll-to-top";
 import { RootShell } from "@/components/layout/root-shell";
+import { BrandingProvider } from "@/components/layout/branding-provider";
+import { getSiteBranding } from "@/lib/site-settings";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -67,11 +69,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const branding = await getSiteBranding();
+
   return (
     <html
       lang="fa"
@@ -80,9 +84,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <DirectionProvider dir="rtl">
-          <TooltipProvider delayDuration={200}>
-            <RootShell>{children}</RootShell>
-          </TooltipProvider>
+          <BrandingProvider value={branding}>
+            <TooltipProvider delayDuration={200}>
+              <RootShell>{children}</RootShell>
+            </TooltipProvider>
+          </BrandingProvider>
         </DirectionProvider>
         <Toaster richColors position="top-center" />
         <ScrollToTop />

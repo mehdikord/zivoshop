@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Link from "next/link";
 import {
   Package, Plus, Pencil, Trash2, Eye, X,
   CheckCircle2, XCircle, AlertTriangle, Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DataTable, Column } from "@/components/admin/data-table/data-table";
-import { ProductFormDialog } from "@/components/admin/product-form/product-form-dialog";
 import { DeleteConfirmDialog } from "@/components/admin/forms/delete-confirm-dialog";
 
 interface ProductRow {
@@ -38,8 +38,6 @@ interface ProductRow {
 
 interface Category { id: string; name: string; }
 interface Brand { id: string; name: string; }
-interface Color { id: string; name: string; hex: string; }
-interface Size { id: string; name: string; }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   active: { label: "فعال", color: "var(--success)" },
@@ -52,15 +50,11 @@ function formatPrice(price: number): string {
 }
 
 export default function ProductsPage() {
-  const [showForm, setShowForm] = useState(false);
-  const [editProduct, setEditProduct] = useState<ProductRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductRow | null>(null);
   const [detailProduct, setDetailProduct] = useState<Record<string, unknown> | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [allColors, setAllColors] = useState<Color[]>([]);
-  const [allSizes, setAllSizes] = useState<Size[]>([]);
 
   const [catFilter, setCatFilter] = useState("");
   const [brandFilter, setBrandFilter] = useState("");
@@ -72,13 +66,9 @@ export default function ProductsPage() {
     Promise.all([
       fetch("/api/admin/categories").then((r) => r.json()),
       fetch("/api/admin/brands").then((r) => r.json()),
-      fetch("/api/admin/colors?pageSize=500").then((r) => r.json()),
-      fetch("/api/admin/sizes?pageSize=500").then((r) => r.json()),
-    ]).then(([catData, brandData, colorData, sizeData]) => {
+    ]).then(([catData, brandData]) => {
       if (catData.success) setCategories(catData.data);
       if (brandData.success) setBrands(brandData.data);
-      if (colorData.success) setAllColors(colorData.data);
-      if (sizeData.success) setAllSizes(sizeData.data);
     });
   }, []);
 
@@ -101,6 +91,7 @@ export default function ProductsPage() {
     if (data.success) {
       toast.success("محصول حذف شد");
       setDeleteTarget(null);
+      setRefreshKey((k) => k + 1);
     } else {
       toast.error(data.message || "خطا در حذف");
     }
@@ -110,12 +101,6 @@ export default function ProductsPage() {
     const res = await fetch(`/api/admin/products/${product.id}`);
     const data = await res.json();
     if (data.success) setDetailProduct(data.data);
-  };
-
-  const handleEdit = async (product: ProductRow) => {
-    const res = await fetch(`/api/admin/products/${product.id}`);
-    const data = await res.json();
-    if (data.success) setEditProduct(data.data);
   };
 
   const columns: Column<ProductRow>[] = [
@@ -208,9 +193,9 @@ export default function ProductsPage() {
           <button onClick={() => handleViewDetail(row)} className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface-secondary)] hover:text-[var(--info)]" title="جزئیات">
             <Eye className="h-4 w-4" />
           </button>
-          <button onClick={() => handleEdit(row)} className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface-secondary)] hover:text-[var(--primary)]" title="ویرایش">
+          <Link href={`/admin/products/${row.id}/edit`} className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--surface-secondary)] hover:text-[var(--primary)]" title="ویرایش" aria-label={`ویرایش ${row.name}`}>
             <Pencil className="h-4 w-4" />
-          </button>
+          </Link>
           <button onClick={() => setDeleteTarget(row)} className="rounded-md p-1.5 text-[var(--text-muted)] hover:bg-[var(--destructive-light)] hover:text-[var(--destructive)]" title="حذف">
             <Trash2 className="h-4 w-4" />
           </button>
@@ -226,13 +211,13 @@ export default function ProductsPage() {
           <Package className="h-6 w-6 text-[var(--primary)]" />
           <h1 className="text-2xl font-bold text-[var(--text)]">مدیریت محصولات</h1>
         </div>
-        <button
-          onClick={() => { setEditProduct(null); setShowForm(true); }}
-          className="flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+        <Link
+          href="/admin/products/new"
+          className="flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)]"
         >
           <Plus className="h-4 w-4" />
           افزودن محصول
-        </button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -267,7 +252,13 @@ export default function ProductsPage() {
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-[var(--border)] p-5">
               <h2 className="text-lg font-bold text-[var(--text)]">{detailProduct.name as string}</h2>
+              <div className="flex items-center gap-1">
+              <Link href={`/admin/products/${detailProduct.id as string}/edit`} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-[var(--primary)] hover:bg-[var(--surface-secondary)]">
+                <Pencil className="h-4 w-4" />
+                ویرایش
+              </Link>
               <button onClick={() => setDetailProduct(null)} className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[var(--surface-secondary)]"><X className="h-5 w-5" /></button>
+              </div>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -316,37 +307,6 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Form Dialog */}
-      {showForm && (
-        <ProductFormDialog
-          mode="create"
-          categories={categories}
-          brands={brands}
-          allColors={allColors}
-          allSizes={allSizes}
-          onClose={() => setShowForm(false)}
-          onSaved={() => {
-            setShowForm(false);
-            setRefreshKey((k) => k + 1);
-          }}
-        />
-      )}
-      {editProduct && (
-        <ProductFormDialog
-          mode="edit"
-          product={editProduct}
-          categories={categories}
-          brands={brands}
-          allColors={allColors}
-          allSizes={allSizes}
-          onClose={() => setEditProduct(null)}
-          onSaved={() => {
-            setEditProduct(null);
-            setRefreshKey((k) => k + 1);
-          }}
-        />
       )}
 
       {deleteTarget && (

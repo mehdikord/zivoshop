@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifyAdminToken } from "@/lib/auth";
 import {
@@ -10,6 +11,8 @@ import { logActivity, extractIp, extractUserAgent, ActivityActions } from "@/lib
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/.+/i;
+/** Logos must be a site-relative path (e.g. /uploads/...) or an absolute http(s) URL. */
+const LOGO_RE = /^(\/(?!\/)[^\s"'<>]*|https?:\/\/[^\s"'<>]+)$/i;
 
 function validateSettings(body: Record<string, unknown>): string | null {
   const siteName =
@@ -54,6 +57,13 @@ function validateSettings(body: Record<string, unknown>): string | null {
     return "عرض جغرافیایی باید عددی بین ۹۰- تا ۹۰ باشد";
   if (!Number.isFinite(lng) || lng < -180 || lng > 180)
     return "طول جغرافیایی باید عددی بین ۱۸۰- تا ۱۸۰ باشد";
+
+  for (const key of ["siteLogo", "siteLogoDark"] as const) {
+    const value = body[key];
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value !== "string" || value.length > 500 || !LOGO_RE.test(value.trim()))
+      return "آدرس لوگو معتبر نیست";
+  }
 
   for (const key of ["contactInstagram", "contactTelegram", "contactWhatsapp"] as const) {
     const value = body[key];
@@ -115,6 +125,8 @@ export async function PUT(request: NextRequest) {
     const payload: Record<string, string> = {
       site_name: String(body.siteName ?? "").trim(),
       site_description: String(body.siteDescription ?? "").trim(),
+      site_logo: String(body.siteLogo ?? "").trim(),
+      site_logo_dark: String(body.siteLogoDark ?? "").trim(),
       contact_phone: String(body.contactPhone ?? "").trim(),
       contact_email: String(body.contactEmail ?? "").trim(),
       contact_address: String(body.contactAddress ?? "").trim(),
@@ -138,6 +150,9 @@ export async function PUT(request: NextRequest) {
     );
 
     const data = await readStructuredSettings();
+
+    // Logo, name and contact info appear in the shared storefront layout.
+    revalidatePath("/", "layout");
 
     logActivity({ userType: "admin", userId: admin.id, action: ActivityActions.SETTINGS_UPDATED, subjectType: "SiteSetting", properties: { keys: Object.keys(payload) }, ipAddress: extractIp(request.headers), userAgent: extractUserAgent(request.headers) });
 

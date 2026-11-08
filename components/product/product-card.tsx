@@ -158,7 +158,7 @@ export function ProductCard({
       <div className="mt-3 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] font-medium tracking-wide text-text-muted">
-            {product.brand}
+            {product.brandName ?? product.brand}
           </p>
           {product.rating ? (
             <p className="inline-flex items-center gap-1 text-[11px] text-text-secondary">

@@ -8,6 +8,8 @@ import {
   Camera,
   Clock,
   ExternalLink,
+  ImageIcon,
+  Library,
   Loader2,
   Mail,
   MapPin,
@@ -17,6 +19,8 @@ import {
   Send,
   Share2,
   Store,
+  Trash2,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +36,8 @@ import {
 } from "@/lib/utils";
 import type { SiteSettings } from "@/lib/site-settings-defs";
 import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings-defs";
+import { MediaPickerDialog } from "@/components/admin/media/media-picker-dialog";
+import { uploadMediaFile } from "@/components/admin/media/upload-media-file";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/.+/i;
@@ -133,6 +139,8 @@ export default function SiteSettingsPage() {
     const settings = {
       siteName: data.siteName,
       siteDescription: data.siteDescription,
+      siteLogo: data.siteLogo ?? "",
+      siteLogoDark: data.siteLogoDark ?? "",
       contactPhone: data.contactPhone,
       contactEmail: data.contactEmail,
       contactAddress: data.contactAddress,
@@ -220,6 +228,8 @@ export default function SiteSettingsPage() {
       const tabsByField: Partial<Record<FieldName, TabValue>> = {
         siteName: "general",
         siteDescription: "general",
+        siteLogo: "general",
+        siteLogoDark: "general",
         contactPhone: "contact",
         contactEmail: "contact",
         contactAddress: "contact",
@@ -390,6 +400,38 @@ export default function SiteSettingsPage() {
                 />
               </SettingsField>
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+            <SectionHeader
+              icon={ImageIcon}
+              title="لوگوی سایت"
+              description="لوگو در سربرگ، منوی موبایل، صفحات ورود و پاورقی فروشگاه نمایش داده می‌شود. اگر لوگویی تنظیم نشود، نام «زیوو» به‌صورت تایپوگرافی نمایش داده می‌شود."
+            />
+            <div className="grid gap-5 md:grid-cols-2">
+              <LogoField
+                id="site-logo"
+                label="لوگوی اصلی"
+                hint="برای پس‌زمینه‌های روشن (سربرگ و منوها)."
+                surface="light"
+                value={form.siteLogo}
+                siteName={form.siteName}
+                onChange={(v) => setValue("siteLogo", v)}
+              />
+              <LogoField
+                id="site-logo-dark"
+                label="لوگوی پس‌زمینه تیره (اختیاری)"
+                hint="برای پاورقی تیره. اگر خالی باشد از لوگوی اصلی استفاده می‌شود."
+                surface="dark"
+                value={form.siteLogoDark}
+                fallback={form.siteLogo}
+                siteName={form.siteName}
+                onChange={(v) => setValue("siteLogoDark", v)}
+              />
+            </div>
+            <p className="mt-4 text-xs leading-6 text-[var(--text-muted)]">
+              پیشنهاد: فایل SVG یا PNG با پس‌زمینه شفاف، ارتفاع حداقل ۱۲۰ پیکسل و نسبت افقی. پس از ذخیره، لوگو بلافاصله در فروشگاه به‌روزرسانی می‌شود.
+            </p>
           </div>
         </TabsContent>
 
@@ -751,6 +793,160 @@ function SocialField({
         />
       </div>
       <FieldError id={`${id}-error`} error={error} />
+    </div>
+  );
+}
+
+function LogoField({
+  id,
+  label,
+  hint,
+  surface,
+  value,
+  fallback,
+  siteName,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  surface: "light" | "dark";
+  value: string;
+  /** Shown faded when `value` is empty (e.g. dark logo inheriting the main one). */
+  fallback?: string;
+  siteName: string;
+  onChange: (value: string) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+
+  const preview = value || fallback || "";
+  const inherited = !value && !!fallback;
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("فقط فایل تصویری مجاز است");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("حجم لوگو نباید بیشتر از ۲ مگابایت باشد");
+      return;
+    }
+    setProgress(0);
+    try {
+      const result = await uploadMediaFile(file, { onProgress: setProgress });
+      onChange(result.url);
+      toast.success("لوگو آپلود شد؛ برای اعمال، تغییرات را ذخیره کنید");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "خطا در آپلود لوگو");
+    } finally {
+      setProgress(null);
+    }
+  };
+
+  const uploading = progress !== null;
+
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <p id={`${id}-label`} className="text-sm font-medium text-[var(--text-secondary)]">{label}</p>
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">{hint}</p>
+      </div>
+
+      <div
+        aria-labelledby={`${id}-label`}
+        className={`relative flex h-36 items-center justify-center overflow-hidden rounded-xl border px-6 ${
+          surface === "dark"
+            ? "border-[#3f2a1c] bg-[#3f2a1c]"
+            : "border-[var(--border)] bg-[#f7efe6]"
+        }`}
+        style={{
+          backgroundImage:
+            surface === "dark"
+              ? "radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px)"
+              : "radial-gradient(rgb(80 41 9 / 0.07) 1px, transparent 1px)",
+          backgroundSize: "14px 14px",
+        }}
+      >
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt={`پیش‌نمایش ${label}`}
+            className={`max-h-20 max-w-full object-contain ${inherited ? "opacity-50" : ""}`}
+          />
+        ) : (
+          <div className="flex flex-col items-center leading-none">
+            <span className={`text-3xl font-extrabold ${surface === "dark" ? "text-[#f7efe6]" : "text-[#502909]"}`}>
+              {siteName || "زیوو"}
+            </span>
+            <span className="mt-1 text-[10px] font-semibold tracking-[0.45em] text-[#a06f39]">ZIVO</span>
+          </div>
+        )}
+
+        <span className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+          surface === "dark" ? "bg-white/10 text-white/80" : "bg-[#502909]/10 text-[#502909]"
+        }`}>
+          {value ? "لوگوی سفارشی" : inherited ? "از لوگوی اصلی" : "پیش‌فرض (متنی)"}
+        </span>
+
+        {uploading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 text-white">
+            <Loader2 className="size-5 animate-spin" aria-hidden />
+            <span className="text-xs tabular-nums">{(progress ?? 0).toLocaleString("fa-IR")}٪</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label
+          htmlFor={`${id}-file`}
+          className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-xs font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          <Upload className="size-3.5" aria-hidden />
+          آپلود لوگو
+        </label>
+        <input
+          id={`${id}-file`}
+          type="file"
+          accept="image/svg+xml,image/png,image/webp,image/jpeg,image/avif"
+          className="sr-only"
+          onChange={handleFile}
+          disabled={uploading}
+        />
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)]"
+        >
+          <Library className="size-3.5" aria-hidden />
+          انتخاب از رسانه
+        </button>
+        {value ? (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--destructive)] hover:bg-[var(--destructive-light)]"
+          >
+            <Trash2 className="size-3.5" aria-hidden />
+            حذف
+          </button>
+        ) : null}
+      </div>
+
+      <MediaPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        accept="image"
+        title={`انتخاب ${label}`}
+        onSelect={(items) => {
+          const item = items[0];
+          if (item) onChange(item.url);
+        }}
+      />
     </div>
   );
 }
